@@ -1,26 +1,26 @@
 #include <Arduino.h>
 
-int ph_pin = 15;
+int temp_pin = 4;
 
-float val_ph;
+float val_temp;
 void setup()
 {
     Serial.begin(115200);
-    pinMode(ph_pin, INPUT);
+    pinMode(temp_pin, INPUT);
 }
 
 void loop()
 {
-    float raw_val_ph = analogRead(ph_pin);
+    float raw_val_temp = analogRead(temp_pin);
 
-    val_ph = raw_val_ph / 4095 * 14;
+    val_temp = raw_val_temp / 4095 * 100;
 
-    Serial.print("ph raw= ");
-    Serial.print(raw_val_ph);
-    Serial.print(", ph= ");
-    Serial.println(val_ph);
+    Serial.print("temp raw= ");
+    Serial.print(raw_val_temp);
+    Serial.print(", temp= ");
+    Serial.println(val_temp);
 
     Serial.println("");
 
-    delay(1000);
+    delay(100);
 }
