@@ -71,14 +71,14 @@ void loop()
     //   Serial.print(rawADC);
     //   Serial.print("volt: ");
     //   Serial.print(voltage);
-    Serial.print("Temp: ");
-    Serial.println("67.4"); // Mencetak nilai pH dengan dua desimal
+    Serial.print("  pH Value: ");
+    Serial.println(pHValue, 2); // Mencetak nilai pH dengan dua desimal
 
     lcd.backlight();
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Temp");
+    lcd.print("PH");
     lcd.setCursor(9, 1);
-    lcd.print("67.4");
+    lcd.print(pHValue);
     delay(3000);
 }
