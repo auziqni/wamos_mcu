@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <LiquidCrystal_I2C.h>
-LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // pin udara
 int co_pin = 32;
@@ -11,11 +9,6 @@ int ph_pin = 2;
 int tds_pin = 15;
 int temp_pin = 4;
 
-int pilot_good = 13;
-int pilot_warning = 12;
-int pilot_bad = 14;
-int pompa = 27;
-
 // global val
 float udara_co, udara_nh3, udara_no2;
 float air_ph, air_tds, air_temp;
@@ -23,11 +16,6 @@ float air_ph, air_tds, air_temp;
 // global condition
 int kondisi_air = 1;   // 1:good, 2:warning, 3;bad
 int kondisi_udara = 1; // 1:good, 2:warning, 3;bad
-
-int now_millis = 0;
-int last_millis = 0;
-
-bool printSerial = false;
 
 void setup()
 {
@@ -40,21 +28,6 @@ void setup()
     pinMode(ph_pin, INPUT);
     pinMode(tds_pin, INPUT);
     pinMode(temp_pin, INPUT);
-
-    pinMode(pilot_good, OUTPUT);
-    pinMode(pilot_warning, OUTPUT);
-    pinMode(pilot_bad, OUTPUT);
-    pinMode(pompa, OUTPUT);
-
-    lcd.init();
-    lcd.backlight();
-    lcd.setCursor(0, 0);
-    lcd.print("Hello, world!");
-    delay(3500);
-    lcd.clear();
-
-    now_millis = millis();
-    last_millis = now_millis;
 }
 
 float calculateTDS(float tdsReading)
@@ -96,26 +69,21 @@ void ReadSensor()
 
 void SerialWrite()
 {
-    if (printSerial)
-    {
+    Serial.print("CO= ");
+    Serial.print(udara_co);
+    Serial.print(", NO2= ");
+    Serial.print(udara_no2);
+    Serial.print(", NH3= ");
+    Serial.println(udara_nh3);
 
-        Serial.print("CO= ");
-        Serial.print(udara_co);
-        Serial.print(", NO2= ");
-        Serial.print(udara_no2);
-        Serial.print(", NH3= ");
-        Serial.println(udara_nh3);
+    Serial.print("Ph= ");
+    Serial.print(air_ph);
+    Serial.print(", TDS=");
+    Serial.print(air_tds);
+    Serial.print(", Temp=");
+    Serial.println(air_temp);
 
-        Serial.print("Ph= ");
-        Serial.print(air_ph);
-        Serial.print(", TDS=");
-        Serial.print(air_tds);
-        Serial.print(", Temp=");
-        Serial.println(air_temp);
-
-        Serial.println("");
-        printSerial = false;
-    }
+    Serial.println("");
 }
 
 int cekph()
@@ -182,29 +150,29 @@ void Process()
     if (udara_co > batas_udara_co || udara_no2 > batas_udara_no2 || udara_nh3 > batas_udara_nh3)
     {
         kondisi_udara = 3;
-        // Serial.println(" udara berbahaya");
+        Serial.println(" udara berbahaya");
     }
     else
     {
         kondisi_udara = 1;
-        // Serial.println(" udara bagus");
+        Serial.println(" udara bagus");
     }
 
     // water: good
     if (cekph() == 1 && cektds() == 1 && cektemp() == 1)
     {
         kondisi_air = 1;
-        // Serial.println(" air bagus");
+        Serial.println(" air bagus");
     }
     else if (cekph() == 3 || cektds() == 3 || cektemp() == 3)
     {
         kondisi_air = 3;
-        // Serial.println(" air berbahaya");
+        Serial.println(" air berbahaya");
     }
     else
     {
         kondisi_air = 2;
-        // Serial.println(" air warning");
+        Serial.println(" air warning");
     }
 }
 
@@ -214,75 +182,17 @@ void Actuate()
     switch (kondisi_air)
     {
     case 1:
-        digitalWrite(pilot_good, HIGH);
-        digitalWrite(pilot_warning, LOW);
-        digitalWrite(pilot_bad, LOW);
-        digitalWrite(pompa, LOW);
-
-        break;
-
-    case 2:
-        digitalWrite(pilot_good, LOW);
-        digitalWrite(pilot_warning, HIGH);
-        digitalWrite(pilot_bad, LOW);
-        digitalWrite(pompa, HIGH);
-        break;
-    case 3:
-        digitalWrite(pilot_good, LOW);
-        digitalWrite(pilot_warning, LOW);
-        digitalWrite(pilot_bad, HIGH);
-        digitalWrite(pompa, HIGH);
+        /* code */
         break;
 
     default:
         break;
     }
 }
-
-void PrintLcd()
-{
-    if (now_millis - last_millis < 2000)
-    {
-        lcd.setCursor(0, 0);
-        lcd.print("PH");
-        lcd.setCursor(10, 1);
-        lcd.print(air_ph);
-    }
-    else if (now_millis - last_millis < 4000)
-    {
-        lcd.setCursor(0, 0);
-        lcd.print("TDS");
-        lcd.setCursor(10, 1);
-        lcd.print(air_tds);
-    }
-    else
-    {
-        lcd.setCursor(0, 0);
-        lcd.print("Temperature");
-        lcd.setCursor(10, 1);
-        lcd.print(air_temp);
-    }
-}
-
 void loop()
 {
-    // revalidate timer
-    now_millis = millis();
-    if (now_millis - last_millis > 6000)
-    {
-        last_millis = now_millis;
-        printSerial = true;
-        lcd.clear();
-    }
-
     ReadSensor();
-
-    Process();
-    Actuate();
-
-    // Serial.print(now_millis);
-    // Serial.print(" ");
-    Serial.println(now_millis - last_millis);
-    PrintLcd();
     SerialWrite();
+    Process();
+    delay(1000);
 }

@@ -1,9 +1,9 @@
 #include <Arduino.h>
 
-int relay1 = 36;
-int relay2 = 39;
-int relay3 = 34;
-int relay4 = 35;
+int relay1 = 13;
+int relay2 = 12;
+int relay3 = 14;
+int relay4 = 27;
 
 float val_temp;
 void setup()
@@ -18,6 +18,7 @@ void setup()
 void loop()
 {
     digitalWrite(relay1, HIGH);
+    Serial.println("idup");
     delay(1500);
     digitalWrite(relay1, LOW);
     delay(1500);
