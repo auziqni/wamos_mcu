@@ -217,6 +217,7 @@ void Actuate()
         digitalWrite(pilot_good, HIGH);
         digitalWrite(pilot_warning, LOW);
         digitalWrite(pilot_bad, LOW);
+        digitalWrite(pompa, LOW);
 
         break;
 
@@ -224,26 +225,17 @@ void Actuate()
         digitalWrite(pilot_good, LOW);
         digitalWrite(pilot_warning, HIGH);
         digitalWrite(pilot_bad, LOW);
-
+        digitalWrite(pompa, HIGH);
         break;
     case 3:
         digitalWrite(pilot_good, LOW);
         digitalWrite(pilot_warning, LOW);
         digitalWrite(pilot_bad, HIGH);
-
+        digitalWrite(pompa, HIGH);
         break;
 
     default:
         break;
-    }
-
-    if (cektds() > 1)
-    {
-        digitalWrite(pompa, HIGH);
-    }
-    else
-    {
-        digitalWrite(pompa, LOW);
     }
 }
 
@@ -287,6 +279,9 @@ void loop()
     Process();
     Actuate();
 
+    // Serial.print(now_millis);
+    // Serial.print(" ");
+    Serial.println(now_millis - last_millis);
     PrintLcd();
     SerialWrite();
 }
