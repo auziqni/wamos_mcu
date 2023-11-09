@@ -5,7 +5,7 @@ int temp_pin = 4;
 float val_temp;
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(115200); 
     pinMode(temp_pin, INPUT);
 }
 

@@ -1,16 +1,27 @@
 #include <Arduino.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include <LiquidCrystal_I2C.h>
+#include <WiFi.h>
+#include <ArduinoJson.h>
+#include <HTTPClient.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-// pin udara
-int co_pin = 32;
-int nh3_pin = 33;
-int no2_pin = 25;
-// pin air
-int ph_pin = 2;
-int tds_pin = 15;
-int temp_pin = 4;
+const char *ssid = "wamos";
+const char *password = "wamos123";
 
+// pin udara
+int co_pin = 36;
+int nh3_pin = 39;
+int no2_pin = 34;
+// pin air
+int ph_pin = 32;
+int tds_pin = 35;
+const int temp_pin = 33;
+OneWire oneWire(temp_pin);
+DallasTemperature sensors(&oneWire);
+
+// pin actuate lamp and pump
 int pilot_good = 13;
 int pilot_warning = 12;
 int pilot_bad = 14;
@@ -27,11 +38,38 @@ int kondisi_udara = 1; // 1:good, 2:warning, 3;bad
 int now_millis = 0;
 int last_millis = 0;
 
-bool printSerial = false;
+bool renewData = false;
+int count2send = 0;
+
+void Wificon()
+{
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+        Serial.print(".");
+    }
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        Serial.println("");
+        Serial.print("WiFi connected : ");
+        Serial.print(ssid);
+        Serial.println("IP address: ");
+        Serial.println(WiFi.localIP());
+
+        lcd.setCursor(0, 0);
+        lcd.print("Connected to: ");
+        lcd.setCursor(0, 1);
+        lcd.print(ssid);
+
+        delay(3000);
+    }
+}
 
 void setup()
 {
     Serial.begin(115200);
+    sensors.begin();
+    WiFi.begin(ssid, password);
 
     // int pin
     pinMode(co_pin, INPUT);
@@ -39,7 +77,7 @@ void setup()
     pinMode(nh3_pin, INPUT);
     pinMode(ph_pin, INPUT);
     pinMode(tds_pin, INPUT);
-    pinMode(temp_pin, INPUT);
+    pinMode(temp_pin, INPUT_PULLUP);
 
     pinMode(pilot_good, OUTPUT);
     pinMode(pilot_warning, OUTPUT);
@@ -52,6 +90,19 @@ void setup()
     lcd.print("Hello, world!");
     delay(3500);
     lcd.clear();
+
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print("Connecting to ");
+        Serial.println(ssid);
+        lcd.setCursor(0, 0);
+        lcd.print("Connecting to :");
+        lcd.setCursor(0, 1);
+        lcd.print(ssid);
+        Wificon();
+    }
+
+    delay(3000);
 
     now_millis = millis();
     last_millis = now_millis;
@@ -81,7 +132,7 @@ void ReadSensor()
     float raw_udara_nh3 = analogRead(nh3_pin);
     float raw_air_ph = analogRead(ph_pin);
     float raw_air_tds = analogRead(tds_pin);
-    float raw_val_temp = analogRead(temp_pin);
+    sensors.requestTemperatures();
 
     udara_co = ((4095 - raw_udara_co) / 4095) * 1000;
     udara_no2 = raw_udara_no2 / 4095 * 1;
@@ -90,32 +141,7 @@ void ReadSensor()
     float voltage = (raw_air_ph / 4095.0) * 3.3;
     air_ph = (voltage / 5) * 14;
     air_tds = calculateTDS(raw_air_tds);
-    // air_temp = raw_val_temp / 4095 * 100;
-    air_temp = 32;
-}
-
-void SerialWrite()
-{
-    if (printSerial)
-    {
-
-        Serial.print("CO= ");
-        Serial.print(udara_co);
-        Serial.print(", NO2= ");
-        Serial.print(udara_no2);
-        Serial.print(", NH3= ");
-        Serial.println(udara_nh3);
-
-        Serial.print("Ph= ");
-        Serial.print(air_ph);
-        Serial.print(", TDS=");
-        Serial.print(air_tds);
-        Serial.print(", Temp=");
-        Serial.println(air_temp);
-
-        Serial.println("");
-        printSerial = false;
-    }
+    air_temp = sensors.getTempCByIndex(0);
 }
 
 int cekph()
@@ -247,6 +273,38 @@ void Actuate()
     }
 }
 
+void SendData()
+{
+    String jsonReqPayload = "";
+    StaticJsonDocument<200> D2W;
+
+    D2W["no_alat"] = 1;
+    D2W["air_ph"] = air_ph;
+    D2W["air_tds"] = air_tds;
+    D2W["air_suhu"] = air_temp;
+    D2W["udara_co"] = udara_co;
+    D2W["udara_no2"] = udara_no2;
+    D2W["udara_ch3"] = udara_nh3;
+
+    serializeJson(D2W, jsonReqPayload);
+    Serial.println(jsonReqPayload);
+
+    // String fingerprint ="";
+    // HTTPClient http;
+    // // std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
+    // // client->setFingerprint(fingerprint);
+
+    // http.begin(*client, "https://www.moji.my.id/api/updatejamaahloc");
+    // http.setTimeout(10000);
+    // http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+    // http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    // http.addHeader("Content-Type", "application/json; charset=UTF-8");
+
+    // int httpResponseCode = http.POST(jsonReqPayload);
+    // Serial.print("respon :");
+    // Serial.println(httpResponseCode);
+}
+
 void PrintLcd()
 {
     if (now_millis - last_millis < 2000)
@@ -272,6 +330,26 @@ void PrintLcd()
     }
 }
 
+void SerialWrite()
+{
+
+    Serial.print("CO= ");
+    Serial.print(udara_co);
+    Serial.print(", NO2= ");
+    Serial.print(udara_no2);
+    Serial.print(", NH3= ");
+    Serial.println(udara_nh3);
+
+    Serial.print("Ph= ");
+    Serial.print(air_ph);
+    Serial.print(", TDS=");
+    Serial.print(air_tds);
+    Serial.print(", Temp=");
+    Serial.println(air_temp);
+
+    Serial.println("");
+}
+
 void loop()
 {
     // revalidate timer
@@ -279,14 +357,37 @@ void loop()
     if (now_millis - last_millis > 6000)
     {
         last_millis = now_millis;
-        printSerial = true;
+        renewData = true;
+        count2send++;
         lcd.clear();
     }
 
+    // wifi reconnect
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print("Connecting to ");
+        Serial.println(ssid);
+        lcd.setCursor(0, 0);
+        lcd.print("Connecting to :");
+        lcd.setCursor(0, 1);
+        lcd.print(ssid);
+        Wificon();
+    }
+
+    if (renewData)
+    {
+        renewData = false;
+    }
+
+    if (count2send > 10)
+    {
+        count2send = 0;
+    }
+
     ReadSensor();
-    Process();
-    Actuate();
+    SerialWrite();
 
     PrintLcd();
-    SerialWrite();
+    Process();
+    Actuate();
 }

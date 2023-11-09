@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // pin udara
@@ -9,7 +11,9 @@ int no2_pin = 25;
 // pin air
 int ph_pin = 2;
 int tds_pin = 15;
-int temp_pin = 4;
+const int temp_pin = 4;
+OneWire oneWire(temp_pin);
+DallasTemperature sensors(&oneWire);
 
 int pilot_good = 13;
 int pilot_warning = 12;
@@ -32,6 +36,7 @@ bool printSerial = false;
 void setup()
 {
     Serial.begin(115200);
+    sensors.begin();
 
     // int pin
     pinMode(co_pin, INPUT);
@@ -81,7 +86,7 @@ void ReadSensor()
     float raw_udara_nh3 = analogRead(nh3_pin);
     float raw_air_ph = analogRead(ph_pin);
     float raw_air_tds = analogRead(tds_pin);
-    float raw_val_temp = analogRead(temp_pin);
+    sensors.requestTemperatures();
 
     udara_co = ((4095 - raw_udara_co) / 4095) * 1000;
     udara_no2 = raw_udara_no2 / 4095 * 1;
@@ -90,8 +95,7 @@ void ReadSensor()
     float voltage = (raw_air_ph / 4095.0) * 3.3;
     air_ph = (voltage / 5) * 14;
     air_tds = calculateTDS(raw_air_tds);
-    // air_temp = raw_val_temp / 4095 * 100;
-    air_temp = 32;
+    air_temp = sensors.getTempCByIndex(0);
 }
 
 void SerialWrite()

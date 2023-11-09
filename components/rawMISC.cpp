@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
-int co = 32;
-int nh3 = 33;
-int no2 = 25;
+int co = 36;  // 32
+int nh3 = 39; // 33
+int no2 = 34; // 25
 
 float val_co, val_nh3, val_no2;
 void setup()

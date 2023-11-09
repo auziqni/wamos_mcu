@@ -1,13 +1,18 @@
 #include <Arduino.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 // pin udara
-int co_pin = 32;
-int nh3_pin = 33;
-int no2_pin = 25;
+int co_pin = 36;
+int nh3_pin = 39;
+int no2_pin = 34;
+// int no2_pin = 25;
 // pin air
-int ph_pin = 2;
-int tds_pin = 15;
-int temp_pin = 4;
+int ph_pin = 35;
+int tds_pin = 32;
+const int temp_pin = 33;
+OneWire oneWire(temp_pin);
+DallasTemperature sensors(&oneWire);
 
 float udara_co, udara_nh3, udara_no2;
 float air_ph, air_tds, air_temp;
