@@ -123,8 +123,8 @@ void setup()
 
 float calculateTDS(float tdsReading)
 {
-    float slope = 0.2922;
-    float intercept = 45.8204;
+    float slope = 4.685;
+    float intercept = -5684;
     // slope = (highvalue_calibration - lowvalue_calibration) / (high_read - low_read);
     // intercept = highvalue_calibration - (slope * high_read);
     float tdsValue = (slope * tdsReading) + intercept;
@@ -174,8 +174,6 @@ void SerialWrite()
         break;
     }
 
-    Serial.print("");
-
     Serial.print("CO= ");
     Serial.print(udara_co);
     Serial.print(", NO2= ");
@@ -211,11 +209,6 @@ void ReadSensor()
         float voltage = (raw_air_ph / 4095.0) * 3.3;
         air_ph = (voltage / 5) * 14;
         air_tds = calculateTDS(raw_air_tds);
-        if (raw_air_tds < 1)
-        {
-            air_tds = 0;
-        }
-
         air_temp = sensors.getTempCByIndex(0);
 
         // after read waiting until next timing
@@ -233,7 +226,7 @@ int cekph()
     {
         return 3;
     }
-    else if (air_ph < batasWarning_bawah_air_ph || air_ph > batasWarning_atas_air_ph)
+    else if (air_ph < batasWarning_bawah_air_ph || air_ph > batasWarning_bawah_air_ph)
     {
         return 2;
     }
@@ -244,21 +237,20 @@ int cekph()
 
 int cektds()
 {
-    float batasWarning_bawah_air_tds = 90;
-    float batasBad_atas_air_tds = 9000;
+    float batasWarning_bawah_air_tds = 20, batasWarning_atas_air_tds = 6000;
+    float batasBad_bawah_air_tds = 5, batasBad_atas_air_tds = 9000;
 
-    if (air_tds > batasBad_atas_air_tds)
+    if (air_tds < batasBad_bawah_air_tds || air_tds > batasBad_atas_air_tds)
     {
         return 3;
     }
-    else if (air_tds > batasWarning_bawah_air_tds)
+    else if (air_tds < batasWarning_bawah_air_tds || air_tds > batasWarning_bawah_air_tds)
     {
         return 2;
     }
     else
-    {
+
         return 1;
-    }
 }
 
 int cektemp()
@@ -270,7 +262,7 @@ int cektemp()
     {
         return 3;
     }
-    else if (air_temp < batasWarning_bawah_air_temp || air_temp > batasWarning_atas_air_temp)
+    else if (air_temp < batasWarning_bawah_air_temp || air_temp > batasWarning_bawah_air_temp)
     {
         return 2;
     }
@@ -283,7 +275,7 @@ void Process()
 {
     // batas
     float batas_udara_co = 250;
-    float batas_udara_nh3 = 10;
+    float batas_udara_nh3 = 9;
     float batas_udara_no2 = 1;
 
     if (udara_co > batas_udara_co || udara_no2 > batas_udara_no2 || udara_nh3 > batas_udara_nh3)
@@ -297,9 +289,6 @@ void Process()
         // Serial.println(" udara bagus");
     }
 
-    // Serial.print(cekph());
-    // Serial.print(cektds());
-    // Serial.println(cektemp());
     // water: good
     if (cekph() == 1 && cektds() == 1 && cektemp() == 1)
     {
@@ -321,7 +310,7 @@ void Process()
 void Actuate()
 {
     // relay actuate
-    switch (kondisi_udara)
+    switch (kondisi_air)
     {
     case 1:
         digitalWrite(pilot_good, HIGH);
@@ -361,7 +350,6 @@ void SendData()
 {
     if (count2send > 10)
     {
-        lcd.clear();
         Serial.println("Try to sending data to server");
         lcd.setCursor(0, 0);
         lcd.print("Sending Data");

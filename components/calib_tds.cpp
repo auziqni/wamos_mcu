@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-const int tdsPin = 15;
+const int tdsPin = 35;
 
 // 720 247
 // 2883 8093
@@ -15,8 +15,10 @@ float slope, intercept;
 float calculateTDS(float tdsReading)
 {
     // Menggunakan persamaan linear untuk menghitung TDS
-    slope = (highvalue_calibration - lowvalue_calibration) / (high_read - low_read);
-    intercept = highvalue_calibration - (slope * high_read);
+    // slope = (highvalue_calibration - lowvalue_calibration) / (high_read - low_read);
+    // intercept = highvalue_calibration - (slope * high_read);
+    slope = 0;
+    intercept = 0;
     float tdsValue = (slope * tdsReading) + intercept;
     if (tdsValue < 0)
     {
