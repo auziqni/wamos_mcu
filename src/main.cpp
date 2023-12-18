@@ -7,8 +7,8 @@
 #include <HTTPClient.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-const char *ssid = "wamos";
-const char *password = "wamos123";
+const char *ssid = "teknisee";
+const char *password = "myteknisee";
 
 // pin udara
 int co_pin = 36;
@@ -379,6 +379,8 @@ void SendData()
         D2W["udara_co"] = udara_co;
         D2W["udara_no2"] = udara_no2;
         D2W["udara_ch3"] = udara_nh3;
+        D2W["q_air"] = kondisi_air;
+        D2W["q_udara"] = kondisi_udara;
 
         serializeJson(D2W, jsonReqPayload);
         Serial.print("Payload : ");
